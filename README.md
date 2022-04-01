@@ -28,7 +28,7 @@ sudo apt-get install -y python
 1. Clone the build_tools repository:
 
     ```bash
-    git clone https://github.com/ONLYOFFICE/build_tools.git
+    git clone https://github.com/starrysky95/build_tools.git
     ```
 
 2. Go to the `build_tools/tools/linux` directory:
