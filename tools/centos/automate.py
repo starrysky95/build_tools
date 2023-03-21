@@ -41,7 +41,7 @@ def install_deps():
               "libgtk-3-dev",
               "libpulse-dev",
               "libtool",
-              "p7zip-full",
+              "p7zip",
               "subversion",
               "gzip",
               "libasound2-dev",
