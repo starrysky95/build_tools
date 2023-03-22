@@ -64,7 +64,9 @@ def install_deps():
               "libXScrnSaver-devel",
               "libxkbcommon-x11-devel",
               "openssl-devel",
-              "glibc-devel"
+              "glibc-devel",
+              "libstdc++",
+              "libstdc++-static"
             ]
 
   base.cmd("sudo", ["yum", "install", "-y"] + packages)
