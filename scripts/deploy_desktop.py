@@ -47,24 +47,29 @@ def make():
     base.copy_lib(core_build_dir + "/lib/" + platform_postfix, root_dir + "/converter", "kernel_network")
     base.copy_lib(core_build_dir + "/lib/" + platform_postfix, root_dir + "/converter", "UnicodeConverter")
     base.copy_lib(core_build_dir + "/lib/" + platform_postfix, root_dir + "/converter", "graphics")
-    base.copy_lib(core_build_dir + "/lib/" + platform_postfix, root_dir + "/converter", "PdfWriter")
-    base.copy_lib(core_build_dir + "/lib/" + platform_postfix, root_dir + "/converter", "PdfReader")
+    base.copy_lib(core_build_dir + "/lib/" + platform_postfix, root_dir + "/converter", "PdfFile")
     base.copy_lib(core_build_dir + "/lib/" + platform_postfix, root_dir + "/converter", "DjVuFile")
     base.copy_lib(core_build_dir + "/lib/" + platform_postfix, root_dir + "/converter", "XpsFile")
     base.copy_lib(core_build_dir + "/lib/" + platform_postfix, root_dir + "/converter", "HtmlFile2")
     base.copy_lib(core_build_dir + "/lib/" + platform_postfix, root_dir + "/converter", "HtmlRenderer")
     base.copy_lib(core_build_dir + "/lib/" + platform_postfix, root_dir + "/converter", "Fb2File")
     base.copy_lib(core_build_dir + "/lib/" + platform_postfix, root_dir + "/converter", "EpubFile")
+    base.copy_lib(core_build_dir + "/lib/" + platform_postfix, root_dir + "/converter", "DocxRenderer")
+    base.copy_file(git_dir + "/sdkjs/pdf/src/engine/cmap.bin", root_dir + "/cmap.bin")
 
     if ("ios" == platform):
       base.copy_lib(core_build_dir + "/lib/" + platform_postfix, root_dir + "/converter", "x2t")
     else:
       base.copy_exe(core_build_dir + "/bin/" + platform_postfix, root_dir + "/converter", "x2t")
 
+    if (native_platform == "linux_64"):
+      base.generate_check_linux_system(git_dir + "/build_tools", root_dir + "/converter")
+
     # icu
     if (0 == platform.find("win")):
       base.copy_file(core_dir + "/Common/3dParty/icu/" + platform + "/build/icudt58.dll", root_dir + "/converter/icudt58.dll")
       base.copy_file(core_dir + "/Common/3dParty/icu/" + platform + "/build/icuuc58.dll", root_dir + "/converter/icuuc58.dll")
+      base.copy_file(git_dir + "/desktop-apps/common/converter/package.config", root_dir + "/converter/package.config")
 
     if (0 == platform.find("linux")):
       base.copy_file(core_dir + "/Common/3dParty/icu/" + platform + "/build/libicudata.so.58", root_dir + "/converter/libicudata.so.58")
@@ -77,13 +82,9 @@ def make():
     # doctrenderer
     if isWindowsXP:
       base.copy_lib(core_build_dir + "/lib/" + platform_postfix + "/xp", root_dir + "/converter", "doctrenderer")
-      base.copy_files(core_dir + "/Common/3dParty/v8/v8_xp/" + platform + "/release/icudt*.dll", root_dir + "/converter/")
     else:
-      base.copy_lib(core_build_dir + "/lib/" + platform_postfix, root_dir + "/converter", "doctrenderer")
-      if (0 == platform.find("win")):
-        base.copy_files(core_dir + "/Common/3dParty/v8/v8/out.gn/" + platform + "/release/icudt*.dat", root_dir + "/converter/")
-      elif (-1 == config.option("config").find("use_javascript_core")):
-        base.copy_file(core_dir + "/Common/3dParty/v8/v8/out.gn/" + platform + "/icudtl.dat", root_dir + "/converter/icudtl.dat")
+      base.copy_lib(core_build_dir + "/lib/" + platform_postfix, root_dir + "/converter", "doctrenderer")      
+    base.copy_v8_files(core_dir, root_dir + "/converter", platform, isWindowsXP)
 
     base.generate_doctrenderer_config(root_dir + "/converter/DoctRenderer.config", "../editors/", "desktop")
     base.copy_dir(git_dir + "/document-templates/new", root_dir + "/converter/empty")
@@ -156,12 +157,47 @@ def make():
       elif (0 == platform.find("linux")):
         base.copy_file(git_dir + "/desktop-apps/win-linux/" + apps_postfix + "/DesktopEditors", root_dir + "/DesktopEditors")
 
-      base.copy_lib(core_build_dir + "/lib/" + platform_postfix + ("/xp" if isWindowsXP else ""), root_dir, "videoplayer")
+      if ("" != base.get_env("VIDEO_PLAYER_VLC_DIR")):
+        vlc_dir = git_dir + "/desktop-sdk/ChromiumBasedEditors/videoplayerlib/vlc/"
+        if (0 == platform.find("win")):
+          base.copy_file(vlc_dir + platform + "/bin/libvlc.dll", root_dir + "/libvlc.dll")
+          base.copy_file(vlc_dir + platform + "/bin/libvlccore.dll", root_dir + "/libvlccore.dll")
+          base.copy_file(vlc_dir + platform + "/bin/VLCQtCore.dll", root_dir + "/VLCQtCore.dll")
+          base.copy_file(vlc_dir + platform + "/bin/VLCQtWidgets.dll", root_dir + "/VLCQtWidgets.dll")
+        else:
+          base.copy_file(vlc_dir + platform + "/bin/libvlc.so", root_dir + "/libvlc.so")
+          base.copy_file(vlc_dir + platform + "/bin/libvlc.so.5", root_dir + "/libvlc.so.5")
+          base.copy_file(vlc_dir + platform + "/bin/libvlccore.so", root_dir + "/libvlccore.so")
+          base.copy_file(vlc_dir + platform + "/bin/libvlccore.so.8", root_dir + "/libvlccore.so.8")
+          base.copy_file(vlc_dir + platform + "/bin/VLCQtCore.so", root_dir + "/VLCQtCore.so")
+          base.copy_file(vlc_dir + platform + "/bin/VLCQtWidgets.so", root_dir + "/VLCQtWidgets.so")
+
+        if isWindowsXP:
+          base.copy_lib(core_build_dir + "/lib/" + platform + "/mediaplayer/xp", root_dir, "videoplayer")
+        else:
+          base.copy_lib(core_build_dir + "/lib/" + platform + "/mediaplayer", root_dir, "videoplayer")
+
+        base.copy_dir(vlc_dir + platform + "/bin/plugins", root_dir + "/plugins")
+      else:
+        base.copy_lib(core_build_dir + "/lib/" + platform_postfix + ("/xp" if isWindowsXP else ""), root_dir, "videoplayer")
 
     base.create_dir(root_dir + "/editors")
     base.copy_dir(base_dir + "/js/" + branding + "/desktop/sdkjs", root_dir + "/editors/sdkjs")
     base.copy_dir(base_dir + "/js/" + branding + "/desktop/web-apps", root_dir + "/editors/web-apps")
     base.copy_dir(git_dir + "/desktop-sdk/ChromiumBasedEditors/resources/local", root_dir + "/editors/sdkjs/common/Images/local")
+
+    # desktopeditors-help
+    root_help_dir = root_dir + "-help"
+    if (base.is_dir(root_help_dir)):
+      base.delete_dir(root_help_dir)
+    for i in ["common", "documenteditor", "presentationeditor", "spreadsheeteditor"]:
+      base.copy_dir(
+          base_dir + "/js/" + branding + "/desktop/web-apps/apps/%s/main/resources/help" % i,
+          root_help_dir + "/editors/web-apps/apps/%s/main/resources/help" % i)
+
+      if ("1" != config.option("preinstalled-help") and not isWindowsXP):
+        # remove help from install until web-apps containes help
+        base.delete_dir(root_dir + "/editors/web-apps/apps/%s/main/resources/help" % i)
 
     base.create_dir(root_dir + "/editors/sdkjs-plugins")
     base.copy_sdkjs_plugins(root_dir + "/editors/sdkjs-plugins", True, True)
@@ -183,7 +219,12 @@ def make():
     base.copy_sdkjs_plugin(git_dir + "/desktop-sdk/ChromiumBasedEditors/plugins", root_dir + "/editors/sdkjs-plugins", "sendto", True)
 
     base.copy_file(base_dir + "/js/" + branding + "/desktop/index.html", root_dir + "/index.html")
-    base.copy_dir(git_dir + "/desktop-apps/common/loginpage/providers", root_dir + "/providers")
+
+    if isWindowsXP:
+      base.create_dir(root_dir + "/providers")
+      base.copy_dir(git_dir + "/desktop-apps/common/loginpage/providers/onlyoffice", root_dir + "/providers/onlyoffice")
+    else:
+      base.copy_dir(git_dir + "/desktop-apps/common/loginpage/providers", root_dir + "/providers")
 
     isUseJSC = False
     if (0 == platform.find("mac")):
@@ -196,7 +237,6 @@ def make():
       base.delete_file(root_dir + "/converter/icudtl.dat")
 
     if (0 == platform.find("win")):
-      base.copy_lib(git_dir + "/desktop-apps/win-linux/3dparty/WinSparkle/" + platform, root_dir, "WinSparkle")
       base.delete_file(root_dir + "/cef_sandbox.lib")
       base.delete_file(root_dir + "/libcef.lib")
 
@@ -225,6 +265,7 @@ def make():
       base.cmd_exe(root_dir + "/converter/allthemesgen", ["--converter-dir=\"" + root_dir + "/converter\"", "--src=\"" + root_dir + "/editors/sdkjs/slide/themes\"", "--allfonts=\"AllFonts.js\"", "--output=\"" + root_dir + "/editors/sdkjs/common/Images\""] + themes_params)
       base.delete_file(root_dir + "/converter/AllFonts.js")
       base.delete_file(root_dir + "/converter/font_selection.bin")
+      base.delete_file(root_dir + "/converter/fonts.log")
 
     base.delete_exe(root_dir + "/converter/allfontsgen")
     base.delete_exe(root_dir + "/converter/allthemesgen")

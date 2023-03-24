@@ -33,12 +33,13 @@ def make():
     base.copy_lib(core_build_dir + "/lib/" + platform_postfix, archive_dir, "HtmlRenderer")
     base.copy_lib(core_build_dir + "/lib/" + platform_postfix, archive_dir, "DjVuFile")
     base.copy_lib(core_build_dir + "/lib/" + platform_postfix, archive_dir, "XpsFile")
-    base.copy_lib(core_build_dir + "/lib/" + platform_postfix, archive_dir, "PdfReader")
-    base.copy_lib(core_build_dir + "/lib/" + platform_postfix, archive_dir, "PdfWriter")
+    base.copy_lib(core_build_dir + "/lib/" + platform_postfix, archive_dir, "PdfFile")
     base.copy_lib(core_build_dir + "/lib/" + platform_postfix, archive_dir, "HtmlFile2")
     base.copy_lib(core_build_dir + "/lib/" + platform_postfix, archive_dir, "UnicodeConverter")
     base.copy_lib(core_build_dir + "/lib/" + platform_postfix, archive_dir, "Fb2File")
     base.copy_lib(core_build_dir + "/lib/" + platform_postfix, archive_dir, "EpubFile")
+    base.copy_lib(core_build_dir + "/lib/" + platform_postfix, archive_dir, "DocxRenderer")
+    base.copy_file(git_dir + "/sdkjs/pdf/src/engine/cmap.bin", archive_dir + "/cmap.bin")
     base.copy_exe(core_build_dir + "/bin/" + platform_postfix, archive_dir, "x2t")
 
     base.copy_dir(base_dir + "/js/" + branding + "/builder/sdkjs", archive_dir + "/sdkjs")
@@ -48,19 +49,20 @@ def make():
 
     if ("windows" == base.host_platform()):
       base.copy_files(core_dir + "/Common/3dParty/icu/" + platform + "/build/*.dll", archive_dir + "/")
-      base.copy_files(core_dir + "/Common/3dParty/v8/v8/out.gn/" + platform + "/release/icudt*.dat", archive_dir + "/")
     else:
       base.copy_files(core_dir + "/Common/3dParty/icu/" + platform + "/build/*", archive_dir + "/")
-      if (-1 == config.option("config").find("use_javascript_core")):
-        base.copy_file(core_dir + "/Common/3dParty/v8/v8/out.gn/" + platform + "/icudtl.dat", archive_dir + "/")
+    base.copy_v8_files(core_dir, archive_dir, platform)
 
     base.copy_exe(core_build_dir + "/bin/" + platform_postfix, archive_dir, "allfontsgen")
     base.copy_exe(core_build_dir + "/bin/" + platform_postfix, archive_dir, "allthemesgen")
     base.copy_exe(core_build_dir + "/bin/" + platform_postfix, archive_dir, "standardtester")
+    base.copy_exe(core_build_dir + "/bin/" + platform_postfix, archive_dir, "x2ttester")
+    base.copy_exe(core_build_dir + "/bin/" + platform_postfix, archive_dir, "ooxml_crypt")
 
-    if base.is_file(archive_dir + "/core.7z"):
-      base.delete_file(archive_dir + "/core.7z")
-    base.archive_folder(archive_dir, archive_dir + "/core.7z")
+
+    if base.is_file(archive_dir + ".7z"):
+      base.delete_file(archive_dir + ".7z")
+    base.archive_folder(archive_dir + "/*", archive_dir + ".7z")
 
   return
 

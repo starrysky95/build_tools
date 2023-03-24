@@ -36,19 +36,23 @@ def make():
     base.copy_lib(core_build_dir + "/lib/" + platform_postfix, root_dir, "UnicodeConverter")
     base.copy_lib(core_build_dir + "/lib/" + platform_postfix, root_dir, "kernel_network")
     base.copy_lib(core_build_dir + "/lib/" + platform_postfix, root_dir, "graphics")
-    base.copy_lib(core_build_dir + "/lib/" + platform_postfix, root_dir, "PdfWriter")
-    base.copy_lib(core_build_dir + "/lib/" + platform_postfix, root_dir, "PdfReader")
+    base.copy_lib(core_build_dir + "/lib/" + platform_postfix, root_dir, "PdfFile")
     base.copy_lib(core_build_dir + "/lib/" + platform_postfix, root_dir, "DjVuFile")
     base.copy_lib(core_build_dir + "/lib/" + platform_postfix, root_dir, "XpsFile")
     base.copy_lib(core_build_dir + "/lib/" + platform_postfix, root_dir, "HtmlFile2")
     base.copy_lib(core_build_dir + "/lib/" + platform_postfix, root_dir, "HtmlRenderer")
     base.copy_lib(core_build_dir + "/lib/" + platform_postfix, root_dir, "Fb2File")
     base.copy_lib(core_build_dir + "/lib/" + platform_postfix, root_dir, "EpubFile")
+    base.copy_lib(core_build_dir + "/lib/" + platform_postfix, root_dir, "DocxRenderer")
+    base.copy_file(git_dir + "/sdkjs/pdf/src/engine/cmap.bin", root_dir + "/cmap.bin")
 
     if ("ios" == platform):
       base.copy_lib(core_build_dir + "/lib/" + platform_postfix, root_dir, "x2t")
     else:
       base.copy_exe(core_build_dir + "/bin/" + platform_postfix, root_dir, "x2t")
+
+    if (native_platform == "linux_64"):
+      base.generate_check_linux_system(git_dir + "/build_tools", root_dir)
 
     # icu
     if (0 == platform.find("win")):
@@ -67,20 +71,16 @@ def make():
     if isWindowsXP:
       base.copy_lib(core_build_dir + "/lib/" + platform_postfix + "/xp", root_dir, "doctrenderer")
       base.copy_file(core_build_dir + "/lib/" + platform_postfix + "/xp/doctrenderer.lib", root_dir + "/doctrenderer.lib")
-      base.copy_files(core_dir + "/Common/3dParty/v8/v8_xp/" + platform + "/release/icudt*.dll", root_dir + "/")
     else:
       base.copy_lib(core_build_dir + "/lib/" + platform_postfix, root_dir, "doctrenderer")
       if (0 == platform.find("win")):
         base.copy_file(core_build_dir + "/lib/" + platform_postfix + "/doctrenderer.lib", root_dir + "/doctrenderer.lib")
-        base.copy_files(core_dir + "/Common/3dParty/v8/v8/out.gn/" + platform + "/release/icudt*.dat", root_dir + "/")
-      elif (-1 == config.option("config").find("use_javascript_core")):
-        base.copy_file(core_dir + "/Common/3dParty/v8/v8/out.gn/" + platform + "/icudtl.dat", root_dir + "/icudtl.dat")
+    base.copy_v8_files(core_dir, root_dir, platform, isWindowsXP)
 
     # app
     base.copy_exe(core_build_dir + "/bin/" + platform_postfix, root_dir, "docbuilder")
     base.generate_doctrenderer_config(root_dir + "/DoctRenderer.config", "./", "builder")
-    base.copy_dir(git_dir + "/DocumentBuilder/empty", root_dir + "/empty")
-    base.copy_dir(git_dir + "/DocumentBuilder/samples", root_dir + "/samples")
+    base.copy_dir(git_dir + "/document-templates/new/en-US", root_dir + "/empty")
 
     # js
     base.copy_dir(base_dir + "/js/" + branding + "/builder/sdkjs", root_dir + "/sdkjs")
@@ -95,9 +95,12 @@ def make():
     base.replaceInFile(root_dir + "/include/docbuilder.h", "Q_DECL_EXPORT", "BUILDING_DOCBUILDER")
     
     if ("win_64" == platform):
-      base.copy_file(core_dir + "/DesktopEditor/doctrenderer/docbuilder.com/x64/Release/docbuilder.com.dll", root_dir + "/docbuilder.com.dll")
+      base.copy_file(core_dir + "/DesktopEditor/doctrenderer/docbuilder.com/deploy/win_64/docbuilder.com.dll", root_dir + "/docbuilder.com.dll")
+      base.copy_file(core_dir + "/DesktopEditor/doctrenderer/docbuilder.net/deploy/win_64/docbuilder.net.dll", root_dir + "/docbuilder.net.dll")
+      
     elif ("win_32" == platform):
-      base.copy_file(core_dir + "/DesktopEditor/doctrenderer/docbuilder.com/Win32/Release/docbuilder.com.dll", root_dir + "/docbuilder.com.dll")
+      base.copy_file(core_dir + "/DesktopEditor/doctrenderer/docbuilder.com/deploy/win_32/docbuilder.com.dll", root_dir + "/docbuilder.com.dll")
+      base.copy_file(core_dir + "/DesktopEditor/doctrenderer/docbuilder.net/deploy/win_32/docbuilder.net.dll", root_dir + "/docbuilder.net.dll")
 
     # correct ios frameworks
     if ("ios" == platform):
@@ -105,6 +108,7 @@ def make():
 
     if (0 == platform.find("mac")):
       base.mac_correct_rpath_x2t(root_dir)
-
+      base.mac_correct_rpath_docbuilder(root_dir)
+  
   return
 

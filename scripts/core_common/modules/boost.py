@@ -67,30 +67,49 @@ def make():
   # build
   if ("windows" == base.host_platform()):
     win_toolset = "msvc-14.0"
-    if (-1 != config.option("platform").find("win_64")) and not base.is_dir("../build/win_64"):      
-      base.cmd("bootstrap.bat", ["vc14"])
+    win_boot_arg = "vc14"
+    win_vs_version = "vc140"
+    if (config.option("vs-version") == "2019"):
+      win_toolset = "msvc-14.2"
+      win_boot_arg = "vc142"
+      win_vs_version = "vc142"
+    if (-1 != config.option("platform").find("win_64")) and not base.is_file("../build/win_64/lib/libboost_system-" + win_vs_version + "-mt-x64-1_72.lib"):
+      base.cmd("bootstrap.bat", [win_boot_arg])
       base.cmd("b2.exe", ["headers"])
       base.cmd("b2.exe", ["--clean"])
       base.cmd("b2.exe", ["--prefix=./../build/win_64", "link=static", "--with-filesystem", "--with-system", "--with-date_time", "--with-regex", "--toolset=" + win_toolset, "address-model=64", "install"])
-    if (-1 != config.option("platform").find("win_32")) and not base.is_dir("../build/win_32"):
-      base.cmd("bootstrap.bat", ["vc14"])
+    if (-1 != config.option("platform").find("win_32")) and not base.is_file("../build/win_32/lib/libboost_system-" + win_vs_version + "-mt-x32-1_72.lib"):
+      base.cmd("bootstrap.bat", [win_boot_arg])
       base.cmd("b2.exe", ["headers"])
       base.cmd("b2.exe", ["--clean"])
       base.cmd("b2.exe", ["--prefix=./../build/win_32", "link=static", "--with-filesystem", "--with-system", "--with-date_time", "--with-regex", "--toolset=" + win_toolset, "address-model=32", "install"])
     correct_install_includes_win(base_dir, "win_64")
     correct_install_includes_win(base_dir, "win_32")    
 
-  if (-1 != config.option("platform").find("linux")) and not base.is_dir("../build/linux_64"):
+  if config.check_option("platform", "linux_64") and not base.is_dir("../build/linux_64"):
     base.cmd("./bootstrap.sh", ["--with-libraries=filesystem,system,date_time,regex"])
     base.cmd("./b2", ["headers"])
     base.cmd("./b2", ["--clean"])
     base.cmd("./b2", ["--prefix=./../build/linux_64", "link=static", "cxxflags=-fPIC", "install"])    
     # TODO: support x86
 
+  if config.check_option("platform", "linux_arm64") and not base.is_dir("../build/linux_arm64"):
+    boost_qt.make(os.getcwd(), ["filesystem", "system", "date_time", "regex"], "linux_arm64")
+    directory_build = base_dir + "/build/linux_arm64/lib"
+    base.delete_file(directory_build + "/libboost_system.a")
+    base.delete_file(directory_build + "/libboost_system.so")
+    base.copy_files(directory_build + "/linux_arm64/*.a", directory_build)
+
   if (-1 != config.option("platform").find("ios")) and not base.is_dir("../build/ios"):
+    old_cur2 = os.getcwd()
     clang_correct()
     os.chdir("../")
     base.bash("./boost_ios")
+    os.chdir(old_cur2)
+
+  if (-1 != config.option("platform").find("ios")) and not base.is_dir("../build/ios_xcframework"):
+    boost_qt.make(os.getcwd(), ["filesystem", "system", "date_time", "regex"], "ios_xcframework/ios_simulator", "xcframework_platform_ios_simulator")
+    boost_qt.make(os.getcwd(), ["filesystem", "system", "date_time", "regex"], "ios_xcframework/ios")
 
   if (-1 != config.option("platform").find("android")) and not base.is_dir("../build/android"):
     boost_qt.make(os.getcwd(), ["filesystem", "system", "date_time", "regex"])

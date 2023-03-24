@@ -5,7 +5,7 @@ import base
 import os
 import multiprocessing
 
-def make_pro_file(makefiles_dir, pro_file):
+def make_pro_file(makefiles_dir, pro_file, qmake_config_addon=""):
   platforms = config.option("platform").split()
   for platform in platforms:
     if not platform in config.platforms:
@@ -47,11 +47,13 @@ def make_pro_file(makefiles_dir, pro_file):
 
     # qmake CONFIG+=...
     config_param = base.qt_config(platform)
+    if ("" != qmake_config_addon):
+      config_param += (" " + qmake_config_addon)
 
     # qmake ADDON
     qmake_addon = []
     if ("" != config.option("qmake_addon")):
-      qmake_addon.append(config.option("qmake_addon"))
+      qmake_addon = config.option("qmake_addon").split()
 
     if not base.is_file(qt_dir + "/bin/qmake") and not base.is_file(qt_dir + "/bin/qmake.exe"):
       print("THIS PLATFORM IS NOT SUPPORTED")
@@ -67,6 +69,8 @@ def make_pro_file(makefiles_dir, pro_file):
         base.cmd_and_return_cwd(base.app_make(), ["clean", "-f", makefiles_dir + "/build.makefile_" + file_suff], True)
         base.cmd_and_return_cwd(base.app_make(), ["distclean", "-f", makefiles_dir + "/build.makefile_" + file_suff], True)
         base.cmd(qt_dir + "/bin/qmake", ["-nocache", pro_file, "CONFIG+=" + config_param] + qmake_addon)
+        if not base.is_file(pro_file):
+          base.cmd(qt_dir + "/bin/qmake", ["-nocache", pro_file, "CONFIG+=" + config_param] + qmake_addon)
       if ("0" != config.option("multiprocess")):
         base.cmd_and_return_cwd(base.app_make(), ["-f", makefiles_dir + "/build.makefile_" + file_suff, "-j" + str(multiprocessing.cpu_count())])
       else:
@@ -77,11 +81,12 @@ def make_pro_file(makefiles_dir, pro_file):
       qmake_bat.append("if exist ./" + makefiles_dir + "/build.makefile_" + file_suff + " del /F ./" + makefiles_dir + "/build.makefile_" + file_suff)
       qmake_addon_string = ""
       if ("" != config.option("qmake_addon")):
-        qmake_addon_string = " \"" + config.option("qmake_addon") + "\""
+        qmake_addon_string = " " + (" ").join(["\"" + addon + "\"" for addon in qmake_addon])
       qmake_bat.append("call \"" + qt_dir + "/bin/qmake\" -nocache " + pro_file + " \"CONFIG+=" + config_param + "\"" + qmake_addon_string)
       if ("1" == config.option("clean")):
         qmake_bat.append("call nmake clean -f " + makefiles_dir + "/build.makefile_" + file_suff)
         qmake_bat.append("call nmake distclean -f " + makefiles_dir + "/build.makefile_" + file_suff)
+        qmake_bat.append("call \"" + qt_dir + "/bin/qmake\" -nocache " + pro_file + " \"CONFIG+=" + config_param + "\"" + qmake_addon_string)
       if ("0" != config.option("multiprocess")):
         qmake_bat.append("set CL=/MP")
       qmake_bat.append("call nmake -f " + makefiles_dir + "/build.makefile_" + file_suff)
@@ -94,20 +99,20 @@ def make_pro_file(makefiles_dir, pro_file):
 
 # make build.pro
 def make():
-  is_no_brandind_build = base.is_file("config")
   make_pro_file("makefiles", "build.pro")
-  if config.check_option("module", "builder") and base.is_windows() and is_no_brandind_build:
+  if config.check_option("platform", "ios") and config.check_option("config", "bundle_xcframeworks"):
+    make_pro_file("makefiles", "build.pro", "xcframework_platform_ios_simulator")
+
+  if config.check_option("module", "builder") and base.is_windows() and "onlyoffice" == config.branding():
     # check replace
-    replace_path_lib = ""
-    replace_path_lib_file = os.getcwd() + "/../core/DesktopEditor/doctrenderer/docbuilder.com/docbuilder.h"
-    option_branding = config.option("branding")
-    if (option_branding != ""):
-      replace_path_lib = "../../../build/" + option_branding + "/lib/"
-    # replace
-    if (replace_path_lib != ""):
-      base.replaceInFile(replace_path_lib_file, "../../../build/lib/", replace_path_lib)
-    base.bash("../core/DesktopEditor/doctrenderer/docbuilder.com/build")
-    # restore
-    if (replace_path_lib != ""):
-      base.replaceInFile(replace_path_lib_file, replace_path_lib, "../../../build/lib/")
+    new_replace_path = base.correctPathForBuilder(os.getcwd() + "/../core/DesktopEditor/doctrenderer/docbuilder.com/src/docbuilder.h")
+    if ("2019" == config.option("vs-version")):
+      base.make_sln_project("../core/DesktopEditor/doctrenderer/docbuilder.com/src", "docbuilder.com_2019.sln")
+      if (True):
+        new_path_net = base.correctPathForBuilder(os.getcwd() + "/../core/DesktopEditor/doctrenderer/docbuilder.net/src/docbuilder.net.cpp")
+        base.make_sln_project("../core/DesktopEditor/doctrenderer/docbuilder.net/src", "docbuilder.net.sln")
+        base.restorePathForBuilder(new_path_net)
+    else:
+      base.make_sln_project("../core/DesktopEditor/doctrenderer/docbuilder.com/src", "docbuilder.com.sln")
+    base.restorePathForBuilder(new_replace_path)
   return
